@@ -98,7 +98,7 @@ async function load(){
     const wave=Object.fromEntries(mar.daily.time.map((d,i)=>[d,mar.daily.wave_height_max[i]]));
     const wind=Object.fromEntries(wx.daily.time.map((d,i)=>[d,wx.daily.wind_speed_10m_max[i]]));
     const wcode=Object.fromEntries(wx.daily.time.map((d,i)=>[d,wx.daily.weather_code[i]]));
-    const today=new Date().toISOString().slice(0,10);
+    const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Tokyo'}); // JST基準の今日(YYYY-MM-DD)
     const sstDays=Object.keys(sst).sort();
     const days=Object.keys(wave).filter(d=>d>=today).sort().slice(0,10);
 
