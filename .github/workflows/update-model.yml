@@ -1,0 +1,39 @@
+name: 釣果モデルの自動更新
+
+on:
+  schedule:
+    - cron: "0 20 * * 1"     # 毎週月曜 UTC20:00 = JST 火 05:00
+  workflow_dispatch:           # 手動実行も可
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-model
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: モデル再生成（釣果スクレイプ＋海況分析）
+        run: python3 build_model.py
+
+      - name: 差分があればコミット
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- model.json shiira_catch.json; then
+            git add model.json shiira_catch.json
+            git commit -m "釣果モデル自動更新 $(date -u +'%Y-%m-%d %H:%M UTC')"
+            git push
+            echo "モデルを更新しました"
+          else
+            echo "変更なし"
+          fi

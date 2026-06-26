@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>庄三郎丸 シイラ船 釣行推奨ランキング</title>
+<style>
+  :root{
+    --bg:#04141f; --panel:#0b2433; --panel2:#10344a; --line:#1d4561;
+    --txt:#e7f1f8; --muted:#8fb0c6; --accent:#27c4d9; --gold:#ffd34d;
+    --S:#ff4d6d;--A:#ff8c42;--B:#ffd34d;--C:#5ec27a;--D:#5b8bb0;--E:#5a6b7a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+    background:linear-gradient(170deg,#04141f,#072234);color:var(--txt);
+    min-height:100vh;padding:16px;line-height:1.5}
+  .wrap{max-width:800px;margin:0 auto}
+  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  header h1{font-size:1.2rem}
+  .sub{color:var(--muted);font-size:.8rem;margin:4px 0 14px}
+  .sub a{color:var(--accent);text-decoration:none}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .card h2{font-size:.95rem;margin-bottom:8px;color:var(--accent)}
+  .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+  .stat{background:var(--panel2);border-radius:8px;padding:8px 10px}
+  .stat .l{font-size:.72rem;color:var(--muted)}
+  .stat .v{font-weight:800;font-size:1.05rem}
+  .bars{margin-top:6px}
+  .barrow{display:flex;align-items:center;gap:8px;font-size:.78rem;margin:3px 0}
+  .barrow .lab{width:62px;color:var(--muted)}
+  .barrow .bx{flex:1;background:#06202e;border-radius:4px;height:14px;overflow:hidden}
+  .barrow .bx i{display:block;height:100%;background:linear-gradient(90deg,#27c4d9,#ff8c42)}
+  .barrow .nm{width:54px;text-align:right;font-weight:700}
+  ul.ins{list-style:none;font-size:.86rem}
+  ul.ins li{padding:5px 0 5px 18px;position:relative;border-bottom:1px solid #0e2c3e}
+  ul.ins li:before{content:"›";position:absolute;left:4px;color:var(--accent);font-weight:700}
+  .top3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .top{background:var(--panel2);border-radius:10px;padding:10px;text-align:center;border-top:3px solid var(--accent)}
+  .top .rk{font-size:1.4rem;font-weight:900}
+  .top .dt{font-size:.82rem;font-weight:700}
+  .top .sc{font-size:.72rem;color:var(--muted)}
+  .grid{display:flex;flex-direction:column;gap:7px}
+  .day{display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:center;
+       background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+  .day.cancel{opacity:.55}
+  .rkbadge{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+           font-weight:900;font-size:1.2rem;color:#04141f}
+  .dinfo .dt{font-weight:700;font-size:.92rem}
+  .dinfo .cond{font-size:.75rem;color:var(--muted);margin-top:1px}
+  .dright{text-align:right}
+  .dright .sc{font-weight:800;font-size:1.05rem}
+  .dright .dep{font-size:.72rem;font-weight:700}
+  .dep.ok{color:var(--C)}.dep.caution{color:var(--A)}.dep.cancel{color:var(--S)}
+  .loading,.error{text-align:center;padding:36px;color:var(--muted)}
+  .error{color:#ff8080}
+  footer{color:var(--muted);font-size:.72rem;text-align:center;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><span style="font-size:1.5rem">🎣</span><h1>庄三郎丸 シイラ船 釣行推奨ランキング</h1></header>
+  <div class="sub" id="sub">相模湾・平塚沖 / 過去2年の釣果×海況をAI分析し、10日先までをランク付け</div>
+  <div id="content"><div class="loading">📡 予報を取得して分析中…</div></div>
+  <footer>釣果データ出典: 庄三郎丸 公式釣果（過去2年スクレイプ・分析）／ 海況: Open-Meteo Marine・気象予報。<br>
+  ランクは過去傾向に基づく推測であり釣果・出船を保証しません。出船可否は必ず船宿の公式情報をご確認ください。</footer>
+</div>
+
+<script>
+const SPOT={lat:35.27,lon:139.35};
+let MODEL=null;
+
+const piecewise=(curve,x)=>{
+  if(x<=curve[0][0])return curve[0][1];
+  for(let i=0;i<curve.length-1;i++){
+    const[a,ya]=curve[i],[b,yb]=curve[i+1];
+    if(x>=a&&x<=b)return b===a?ya:ya+(yb-ya)*(x-a)/(b-a);
+  }
+  return curve[curve.length-1][1];
+};
+const dayMean=(times,vals)=>{
+  const m={};
+  times.forEach((t,i)=>{const d=t.slice(0,10);if(vals[i]!=null)(m[d]=m[d]||[]).push(vals[i]);});
+  const o={};for(const d in m)o[d]=m[d].reduce((a,b)=>a+b,0)/m[d].length;return o;
+};
+const rankOf=s=>{for(const[n,th]of MODEL.scoring.rank)if(s>=th)return n;return'E';};
+const WD=["日","月","火","水","木","金","土"];
+
+async function load(){
+  const el=document.getElementById('content');
+  try{
+    MODEL=await fetch('./model.json',{cache:'no-store'}).then(r=>r.json());
+    const mar=await fetch(`https://marine-api.open-meteo.com/v1/marine?latitude=${SPOT.lat}&longitude=${SPOT.lon}`+
+      `&daily=wave_height_max&hourly=sea_surface_temperature&past_days=8&forecast_days=11&timezone=Asia%2FTokyo`).then(r=>r.json());
+    const wx=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${SPOT.lat}&longitude=${SPOT.lon}`+
+      `&daily=wind_speed_10m_max,weather_code&forecast_days=11&timezone=Asia%2FTokyo`).then(r=>r.json());
+
+    const sst=dayMean(mar.hourly.time,mar.hourly.sea_surface_temperature);
+    const wave=Object.fromEntries(mar.daily.time.map((d,i)=>[d,mar.daily.wave_height_max[i]]));
+    const wind=Object.fromEntries(wx.daily.time.map((d,i)=>[d,wx.daily.wind_speed_10m_max[i]]));
+    const wcode=Object.fromEntries(wx.daily.time.map((d,i)=>[d,wx.daily.weather_code[i]]));
+    const today=new Date().toISOString().slice(0,10);
+    const sstDays=Object.keys(sst).sort();
+    const days=Object.keys(wave).filter(d=>d>=today).sort().slice(0,10);
+
+    const S=MODEL.scoring,w=S.weights;
+    const rows=days.map(d=>{
+      const st=sst[d];
+      const i=sstDays.indexOf(d);
+      const trend=(i>=7)?(sst[d]-sst[sstDays[i-7]]):0.3;
+      const wv=wave[d], wd=wind[d]??15;
+      const f_sst=st!=null?piecewise(S.sst_curve,st):0.5;
+      const f_sea=S.season_month[String(parseInt(d.slice(5,7)))];
+      const f_tr=piecewise(S.trend_curve,trend);
+      const f_wd=piecewise(S.wind_curve,wd);
+      const f_wv=piecewise(S.wave_curve,wv??1.0);
+      const score=Math.round(100*(f_sst*w.sst+f_sea*w.season+f_tr*w.trend+f_wd*w.wind+f_wv*w.wave)*10)/10;
+      let dep='ok',depTxt='出船可';
+      if(wv!=null&&wv>=S.deploy_cancel_wave){dep='cancel';depTxt='出船中止濃厚';}
+      else if(wv!=null&&wv>=S.deploy_caution_wave){dep='caution';depTxt='出船注意';}
+      return {d,st,wv,wd,score,rank:rankOf(score),dep,depTxt};
+    });
+    render(rows);
+  }catch(e){el.innerHTML=`<div class="error">取得失敗: ${e.message}</div>`;}
+}
+
+function render(rows){
+  const H=MODEL.history,c=v=>`var(--${v})`;
+  const fmtD=d=>{const dt=new Date(d);return `${d.slice(5).replace('-','/')}(${WD[dt.getDay()]})`;};
+  // 分析サマリー
+  const sstBars=H.by_sst.map(b=>{
+    const pct=Math.min(100,(b.avg??0)/4.5*100);
+    return `<div class="barrow"><span class="lab">${b.range}℃</span>
+      <span class="bx"><i style="width:${pct}%"></i></span><span class="nm">${b.avg??'-'}本</span></div>`;}).join('');
+  const monBars=H.by_month.map(b=>{
+    const pct=Math.min(100,(b.avg??0)/5.7*100);
+    return `<div class="barrow"><span class="lab">${b.range.split('–')[0]}月</span>
+      <span class="bx"><i style="width:${pct}%"></i></span><span class="nm">${b.avg??'-'}本</span></div>`;}).join('');
+
+  // TOP3（出船可）
+  const top3=[...rows].filter(r=>r.dep==='ok').sort((a,b)=>b.score-a.score).slice(0,3);
+
+  let html=`
+  <div class="card"><h2>📊 過去2年の実績分析</h2>
+    <div class="stats">
+      <div class="stat"><div class="l">分析期間</div><div class="v" style="font-size:.82rem">${H.period[0]}〜${H.period[1]}</div></div>
+      <div class="stat"><div class="l">出船日数</div><div class="v">${H.days}日</div></div>
+      <div class="stat"><div class="l">釣果あり率</div><div class="v">${Math.round(H.catch_rate*100)}%</div></div>
+      <div class="stat"><div class="l">最高記録</div><div class="v">${H.max_day.caught}本</div></div>
+    </div>
+    <div class="bars" style="margin-top:10px"><div style="font-size:.78rem;color:var(--muted);margin-bottom:2px">海面水温別 一人当たりキャッチ</div>${sstBars}</div>
+    <div class="bars" style="margin-top:8px"><div style="font-size:.78rem;color:var(--muted);margin-bottom:2px">月別 一人当たりキャッチ</div>${monBars}</div>
+  </div>
+
+  <div class="card"><h2>🎯 釣果が上がる条件（分析からの推測）</h2>
+    <ul class="ins">${MODEL.insights.map(i=>`<li>${i}</li>`).join('')}</ul>
+  </div>
+
+  <div class="card"><h2>🏆 推奨TOP3（出船可・10日内）</h2>
+    <div class="top3">${top3.map((r,i)=>`<div class="top" style="border-color:${c(r.rank)}">
+      <div class="rk" style="color:${c(r.rank)}">${r.rank}</div>
+      <div class="dt">${fmtD(r.d)}</div>
+      <div class="sc">スコア ${r.score}<br>SST${r.st?.toFixed(1)}℃</div></div>`).join('')||'<div class="sc">出船可の日がありません</div>'}</div>
+  </div>
+
+  <div class="card"><h2>📅 10日先ランキング</h2><div class="grid">`;
+  rows.forEach(r=>{
+    html+=`<div class="day ${r.dep==='cancel'?'cancel':''}">
+      <div class="rkbadge" style="background:${c(r.rank)}">${r.rank}</div>
+      <div class="dinfo"><div class="dt">${fmtD(r.d)}</div>
+        <div class="cond">SST ${r.st?r.st.toFixed(1):'-'}℃ ・ 波 ${r.wv!=null?r.wv.toFixed(1):'-'}m ・ 風 ${Math.round(r.wd)}km/h</div></div>
+      <div class="dright"><div class="sc">${r.score}</div><div class="dep ${r.dep}">${r.depTxt}</div></div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+  document.getElementById('content').innerHTML=html;
+  document.getElementById('sub').innerHTML=
+    `相模湾・平塚沖 / 過去2年の釣果×海況を分析 ・ <a href="${MODEL.source}" target="_blank">庄三郎丸 釣果 ↗</a> ・ 更新 ${new Date().toLocaleString('ja-JP')}`;
+}
+load();
+</script>
+</body>
+</html>
