@@ -6,20 +6,23 @@
 <title>庄三郎丸 シイラ船 釣行推奨ランキング</title>
 <style>
   :root{
-    --bg:#04141f; --panel:#0b2433; --panel2:#10344a; --line:#1d4561;
-    --txt:#e7f1f8; --muted:#8fb0c6; --accent:#27c4d9; --gold:#ffd34d;
-    --S:#ff4d6d;--A:#ff8c42;--B:#ffd34d;--C:#5ec27a;--D:#5b8bb0;--E:#5a6b7a;
+    --bg:#eef2f6; --panel:#ffffff; --panel2:#f1f5f9; --line:#d7e0e8;
+    --txt:#2b3640; --muted:#6b7a87; --accent:#007acc; --gold:#d99700;
+    --S:#e23b57;--A:#e8762f;--B:#dca600;--C:#3fa45f;--D:#4a7fb0;--E:#8794a0;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
-    background:linear-gradient(170deg,#04141f,#072234);color:var(--txt);
+    background:var(--bg);color:var(--txt);
     min-height:100vh;padding:16px;line-height:1.5}
   .wrap{max-width:800px;margin:0 auto}
-  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  header h1{font-size:1.2rem}
-  .sub{color:var(--muted);font-size:.8rem;margin:4px 0 14px}
+  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--accent);color:#fff;border-radius:12px;padding:14px 18px;
+    box-shadow:0 2px 6px rgba(0,90,160,.25)}
+  header h1{font-size:1.2rem;color:#fff}
+  .sub{color:var(--muted);font-size:.8rem;margin:8px 2px 14px}
   .sub a{color:var(--accent);text-decoration:none}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;
+    box-shadow:0 1px 3px rgba(20,50,80,.06)}
   .card h2{font-size:.95rem;margin-bottom:8px;color:var(--accent)}
   .stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
   .stat{background:var(--panel2);border-radius:8px;padding:8px 10px}
@@ -28,11 +31,11 @@
   .bars{margin-top:6px}
   .barrow{display:flex;align-items:center;gap:8px;font-size:.78rem;margin:3px 0}
   .barrow .lab{width:62px;color:var(--muted)}
-  .barrow .bx{flex:1;background:#06202e;border-radius:4px;height:14px;overflow:hidden}
-  .barrow .bx i{display:block;height:100%;background:linear-gradient(90deg,#27c4d9,#ff8c42)}
+  .barrow .bx{flex:1;background:#e6ecf2;border-radius:4px;height:14px;overflow:hidden}
+  .barrow .bx i{display:block;height:100%;background:linear-gradient(90deg,#007acc,#39a7df)}
   .barrow .nm{width:54px;text-align:right;font-weight:700}
   ul.ins{list-style:none;font-size:.86rem}
-  ul.ins li{padding:5px 0 5px 18px;position:relative;border-bottom:1px solid #0e2c3e}
+  ul.ins li{padding:5px 0 5px 18px;position:relative;border-bottom:1px solid #eceff3}
   ul.ins li:before{content:"›";position:absolute;left:4px;color:var(--accent);font-weight:700}
   .top3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
   .top{background:var(--panel2);border-radius:10px;padding:10px;text-align:center;border-top:3px solid var(--accent)}
@@ -44,7 +47,7 @@
        background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
   .day.cancel{opacity:.55}
   .rkbadge{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
-           font-weight:900;font-size:1.2rem;color:#04141f}
+           font-weight:900;font-size:1.2rem;color:#16242f}
   .dinfo .dt{font-weight:700;font-size:.92rem}
   .dinfo .cond{font-size:.75rem;color:var(--muted);margin-top:1px}
   .dright{text-align:right}
@@ -52,7 +55,7 @@
   .dright .dep{font-size:.72rem;font-weight:700}
   .dep.ok{color:var(--C)}.dep.caution{color:var(--A)}.dep.cancel{color:var(--S)}
   .loading,.error{text-align:center;padding:36px;color:var(--muted)}
-  .error{color:#ff8080}
+  .error{color:#d00}
   footer{color:var(--muted);font-size:.72rem;text-align:center;margin-top:16px}
 </style>
 </head>
